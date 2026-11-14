@@ -2,7 +2,6 @@ import os
 import json
 import argparse
 import subprocess
-from pathlib import Path
 import cv2
 import mediapipe as mp
 from faster_whisper import WhisperModel
@@ -61,9 +60,45 @@ def find_viral_clips(transcript_data: list, num_clips: int = 4, llm_model: str =
         messages=[{"role": "user", "content": prompt}],
         format="json"
     )
-    data = json.loads(response["message"]["content"])
-    clips = data.get("clips", data if isinstance(data, list) else [])
-    return clips[:num_clips]
+    try:
+        data = json.loads(response["message"]["content"])
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Ollama returned invalid JSON for clip selection.") from exc
+
+    if isinstance(data, dict):
+        clips = data.get("clips", [])
+    elif isinstance(data, list):
+        clips = data
+    else:
+        clips = []
+
+    # Reject malformed, out-of-range, too-short, and overlapping suggestions.
+    video_end = max((float(item.get("end", 0)) for item in transcript_data), default=0.0)
+    valid_clips = []
+    for item in clips:
+        if not isinstance(item, dict):
+            continue
+        try:
+            start = float(item["start"])
+            end = float(item["end"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if start < 0 or end <= start or end > video_end + 1:
+            continue
+        if end - start < 5 or end - start > 60:
+            continue
+        item["start"], item["end"] = start, end
+        valid_clips.append(item)
+
+    valid_clips.sort(key=lambda item: item["start"])
+    non_overlapping = []
+    for item in valid_clips:
+        if non_overlapping and item["start"] < non_overlapping[-1]["end"]:
+            continue
+        non_overlapping.append(item)
+        if len(non_overlapping) >= num_clips:
+            break
+    return non_overlapping
 
 
 def detect_speaker_x_center(video_path: str, start_sec: float, end_sec: float) -> float:
@@ -166,14 +201,23 @@ def render_vertical_short(video_path: str, clip: dict, transcript_data: list, ou
     orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     cap.release()
 
-    x_center_ratio = detect_speaker_x_center(video_path, start, end)
-    crop_w = int(orig_h * (9 / 16))
-    if crop_w > orig_w:
-        crop_w = orig_w
-    crop_h = orig_h
+    if orig_w <= 0 or orig_h <= 0:
+        raise RuntimeError("Could not read the input video's dimensions.")
 
-    x_center_px = int(x_center_ratio * orig_w)
-    x1 = max(0, min(orig_w - crop_w, x_center_px - crop_w // 2))
+    x_center_ratio = detect_speaker_x_center(video_path, start, end)
+    target_ratio = 9 / 16
+    source_ratio = orig_w / orig_h
+    if source_ratio > target_ratio:
+        crop_h = orig_h
+        crop_w = int(crop_h * target_ratio)
+        x_center_px = int(x_center_ratio * orig_w)
+        x1 = max(0, min(orig_w - crop_w, x_center_px - crop_w // 2))
+        y1 = 0
+    else:
+        crop_w = orig_w
+        crop_h = int(crop_w / target_ratio)
+        x1 = 0
+        y1 = max(0, (orig_h - crop_h) // 2)
 
     ass_path = os.path.join(temp_dir, f"captions_{idx}.ass")
     generate_ass_subtitles(transcript_data, start, end, ass_path)
@@ -181,7 +225,7 @@ def render_vertical_short(video_path: str, clip: dict, transcript_data: list, ou
     # Escape path for FFmpeg subtitles filter
     escaped_ass = ass_path.replace("\\", "/").replace(":", "\\:")
 
-    vf_filter = f"crop={crop_w}:{crop_h}:{x1}:0,scale=1080:1920,ass='{escaped_ass}'"
+    vf_filter = f"crop={crop_w}:{crop_h}:{x1}:{y1},scale=1080:1920,ass='{escaped_ass}'"
 
     cmd = [
         "ffmpeg", "-y",
@@ -193,7 +237,9 @@ def render_vertical_short(video_path: str, clip: dict, transcript_data: list, ou
         "-c:a", "aac", "-b:a", "128k",
         output_path
     ]
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"FFmpeg failed to render clip {idx}: {result.stderr[-1500:]}")
 
 
 def main():
