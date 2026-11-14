@@ -8,6 +8,7 @@ Ek 100% open-source, self-hosted AI video clipping tool jo kisi bhi long video s
 - **Smart 9:16 Face-Aware Crop:** `MediaPipe` sampled frames se face position estimate karta hai aur uske aas-paas vertical crop set karta hai. (Continuous frame-by-frame tracking nahi.)
 - **Hormozi-Style Highlighted Captions:** `FFmpeg` + `.ass` subtitles se active word yellow mein highlight hota hai.
 - **CLI + Web UI:** Terminal se ya browser (`Gradio` UI) dono se use kar sakte hain.
+- **Video Input:** Local video upload ya supported YouTube video URL (`yt-dlp`) se import.
 
 ---
 
@@ -34,18 +35,18 @@ pip install -r requirements.txt
 ---
 
 ## ⚠️ Current limitations
-- Web UI currently accepts uploaded video files only; YouTube URL input is not implemented yet.
+- YouTube downloads depend on YouTube availability, video permissions, and `yt-dlp` compatibility. Only download videos you own or are authorized to use.
 - The current web UI runs locally. A public hosted version needs a separate deployment and inference setup.
 - Ollama and the selected model must be installed and running on the same machine as the app.
 - Processing speed depends on your CPU, available RAM, video length, and Whisper model size.
 
 ## 🚀 Usage
 
-### Option A: Browser Web UI (Easy Drag & Drop)
+### Option A: Browser Web UI (Upload or YouTube URL)
 ```bash
 python app.py
 ```
-Browser mein `http://127.0.0.1:7860` khulega—video upload karein aur 3–4 vertical shorts download karein.
+Browser mein `http://127.0.0.1:7860` khulega—video upload karein **ya YouTube URL paste karein**, phir vertical shorts generate karein.
 
 ### Option B: Command Line (CLI)
 ```bash
