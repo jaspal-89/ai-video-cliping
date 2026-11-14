@@ -58,3 +58,19 @@ Output `output_shorts/` folder mein `viral_short_1.mp4` se `viral_short_4.mp4` t
 
 ## 📄 License
 MIT License — Free for personal and commercial use.
+
+## 🐳 Run with Docker (App + Local Ollama)
+
+Prerequisites: Docker Desktop / Docker Engine with Docker Compose.
+
+```bash
+git clone https://github.com/jaspal-89/ai-video-cliping.git
+cd ai-video-cliping
+docker compose up -d ollama
+docker compose exec ollama ollama pull llama3.1
+docker compose up --build -d app
+```
+
+Open `http://localhost:7860` in your browser. The first run may take time because the Ollama model and Whisper model need to download. Video processing needs sufficient RAM/CPU; Docker does not make hosting or compute free.
+
+To stop the app: `docker compose down`.
