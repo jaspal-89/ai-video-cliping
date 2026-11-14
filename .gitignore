@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.env
+.DS_Store
+output_shorts/
+viral_shorts_*/
+*.mp4
+*.wav
+*.ass
