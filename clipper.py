@@ -55,7 +55,8 @@ def find_viral_clips(transcript_data: list, num_clips: int = 4, llm_model: str =
     {formatted_transcript}
     """
 
-    response = ollama.chat(
+    ollama_client = ollama.Client(host=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"))
+    response = ollama_client.chat(
         model=llm_model,
         messages=[{"role": "user", "content": prompt}],
         format="json"
@@ -85,7 +86,7 @@ def find_viral_clips(transcript_data: list, num_clips: int = 4, llm_model: str =
             continue
         if start < 0 or end <= start or end > video_end + 1:
             continue
-        if end - start < 5 or end - start > 60:
+        if end - start < 25 or end - start > 60:
             continue
         item["start"], item["end"] = start, end
         valid_clips.append(item)
@@ -212,11 +213,10 @@ def render_vertical_short(video_path: str, clip: dict, transcript_data: list, ou
         x_center_px = int(x_center_ratio * orig_w)
         x1 = max(0, min(orig_w - crop_w, x_center_px - crop_w // 2))
         y1 = 0
+        crop_filter = f"crop={crop_w}:{crop_h}:{x1}:{y1},scale=1080:1920"
     else:
-        crop_w = orig_w
-        crop_h = int(crop_w / target_ratio)
-        x1 = 0
-        y1 = max(0, (orig_h - crop_h) // 2)
+        # Preserve narrow portrait videos without requesting an oversized crop.
+        crop_filter = "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2"
 
     ass_path = os.path.join(temp_dir, f"captions_{idx}.ass")
     generate_ass_subtitles(transcript_data, start, end, ass_path)
@@ -224,7 +224,7 @@ def render_vertical_short(video_path: str, clip: dict, transcript_data: list, ou
     # Escape path for FFmpeg subtitles filter
     escaped_ass = ass_path.replace("\\", "/").replace(":", "\\:")
 
-    vf_filter = f"crop={crop_w}:{crop_h}:{x1}:{y1},scale=1080:1920,ass='{escaped_ass}'"
+    vf_filter = f"{crop_filter},ass='{escaped_ass}'"
 
     cmd = [
         "ffmpeg", "-y",
