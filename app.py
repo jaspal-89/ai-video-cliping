@@ -78,5 +78,16 @@ with gr.Blocks(title='AI Video Clipper') as demo:
         outputs=[output_gallery, summary_md],
     )
 
-if __name__ == '__main__':
-    demo.queue().launch(server_name='0.0.0.0', server_port=7860)
+if __name__ == "__main__":
+    # Gradio's free share tunnel gives a temporary public URL while this process runs.
+    # Set GRADIO_SHARE=false to disable it. Optional basic auth protects the shared URL.
+    share_enabled = os.getenv("GRADIO_SHARE", "true").strip().lower() in {"1", "true", "yes"}
+    username = os.getenv("APP_USERNAME")
+    password = os.getenv("APP_PASSWORD")
+    auth = (username, password) if username and password else None
+    demo.queue().launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+        share=share_enabled,
+        auth=auth,
+    )
