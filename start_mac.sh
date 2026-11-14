@@ -51,8 +51,21 @@ echo "Downloading the local AI model (first run only)..."
 ollama pull llama3.1
 
 echo
+echo "Set a login for the temporary public link (recommended)."
+read -r -p "Login username (leave blank for no login): " APP_USERNAME
+if [ -n "${APP_USERNAME}" ]; then
+  read -r -s -p "Login password: " APP_PASSWORD
+  echo
+  export APP_USERNAME APP_PASSWORD
+fi
+
+echo
 echo "Starting AI Video Clipper. Keep this Terminal window open."
 echo "A temporary public Gradio URL will appear below."
-echo "Anyone with that URL can access the app unless you configure APP_USERNAME and APP_PASSWORD."
+if [ -n "${APP_USERNAME:-}" ]; then
+  echo "The public link will require the login you just set."
+else
+  echo "WARNING: anyone with the public link can access the app."
+fi
 echo
 python app.py
