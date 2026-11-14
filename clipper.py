@@ -104,28 +104,27 @@ def find_viral_clips(transcript_data: list, num_clips: int = 4, llm_model: str =
 def detect_speaker_x_center(video_path: str, start_sec: float, end_sec: float) -> float:
     mp_face = mp.solutions.face_detection.FaceDetection(min_detection_confidence=0.5)
     cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-    cap.set(cv2.CAP_PROP_POS_FRAMES, int(start_sec * fps))
-
     x_positions = []
-    total_frames = int((end_sec - start_sec) * fps)
-    step = max(1, int(fps))  # Sample 1 frame per second
-
-    for _ in range(0, total_frames, step):
-        ret, frame = cap.read()
-        if not ret:
-            break
-        for _ in range(step - 1):
-            cap.grab()
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = mp_face.process(rgb)
-        if results.detections:
-            bbox = results.detections[0].location_data.relative_bounding_box
-            x_positions.append(bbox.xmin + bbox.width / 2.0)
-
-    cap.release()
+    try:
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        cap.set(cv2.CAP_PROP_POS_FRAMES, int(start_sec * fps))
+        total_frames = max(0, int((end_sec - start_sec) * fps))
+        step = max(1, int(fps))  # Sample approximately one frame per second
+        for _ in range(0, total_frames, step):
+            ret, frame = cap.read()
+            if not ret:
+                break
+            for _ in range(step - 1):
+                cap.grab()
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = mp_face.process(rgb)
+            if results.detections:
+                bbox = results.detections[0].location_data.relative_bounding_box
+                x_positions.append(bbox.xmin + bbox.width / 2.0)
+    finally:
+        cap.release()
+        mp_face.close()
     return sum(x_positions) / len(x_positions) if x_positions else 0.5
-
 
 def format_ass_time(seconds: float) -> str:
     seconds = max(0.0, seconds)
