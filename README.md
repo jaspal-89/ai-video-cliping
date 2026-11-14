@@ -43,6 +43,15 @@ pip install -r requirements.txt
 
 ## 🚀 Usage
 
+### Quick start on macOS
+Install Homebrew first from https://brew.sh, then download/clone this repository and run:
+
+```bash
+bash start_mac.sh
+```
+
+The script installs/checks FFmpeg, Ollama and Python 3.11, installs the Python requirements, downloads the local `llama3.1` model, and launches the app. On first run, downloads can take time. Keep the Terminal window open while generating clips and while using the temporary public URL.
+
 ### Option A: Browser Web UI (Upload or YouTube URL)
 ```bash
 python app.py
