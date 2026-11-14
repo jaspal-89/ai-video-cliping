@@ -3,3 +3,4 @@ ollama>=0.3.3
 mediapipe>=0.10.14
 opencv-python>=4.9.0
 gradio>=4.44.0
+yt-dlp>=2024.10.22
