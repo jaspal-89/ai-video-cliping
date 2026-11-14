@@ -1,6 +1,6 @@
 # 🎬 AI Viral Video Clipper (Open-Source)
 
-Ek 100% open-source, self-hosted AI video clipping tool jo kisi bhi long video se **3–4 sabse engaging/viral moments** dhoondhta hai, unhe **speaker face-tracking** ke saath **9:16 vertical format (1080x1920)** mein crop karta hai, aur **word-by-word yellow-highlighted captions** burn karta hai.
+Ek 100% open-source, self-hosted AI video clipping tool jo kisi bhi long video se **3–4 sabse engaging/viral moments** dhoondhta hai, unhe **face-aware cropping** ke saath **9:16 vertical format (1080x1920)** mein crop karta hai, aur **word-by-word yellow-highlighted captions** burn karta hai.
 
 ## ✨ Features
 - **Zero API Cost / 100% Local:** `faster-whisper` + `Ollama` par chalta hai—koi credit limit ya watermark nahi.
@@ -35,8 +35,9 @@ pip install -r requirements.txt
 ---
 
 ## ⚠️ Current limitations
+- The temporary share URL is public to anyone who has it. Set `APP_USERNAME` and `APP_PASSWORD` before launch to enable basic login, and do not share the URL publicly. Set `GRADIO_SHARE=false` to disable the tunnel.
 - YouTube downloads depend on YouTube availability, video permissions, and `yt-dlp` compatibility. Only download videos you own or are authorized to use.
-- The current web UI runs locally. A public hosted version needs a separate deployment and inference setup.
+- The app can create a temporary public Gradio share URL when launched (`GRADIO_SHARE=true`, the default). The URL works only while the app is running on your computer; this is a tunnel, not permanent cloud hosting.
 - Ollama and the selected model must be installed and running on the same machine as the app.
 - Processing speed depends on your CPU, available RAM, video length, and Whisper model size.
 
@@ -46,7 +47,7 @@ pip install -r requirements.txt
 ```bash
 python app.py
 ```
-Browser mein `http://127.0.0.1:7860` khulega—video upload karein **ya YouTube URL paste karein**, phir vertical shorts generate karein.
+Terminal mein Gradio ka `https://....gradio.live` share URL dikhega. Us URL ko browser mein kholkar video upload karein **ya YouTube URL paste karein**, phir vertical shorts generate karein. Local access `http://127.0.0.1:7860` par bhi rahega.
 
 ### Option B: Command Line (CLI)
 ```bash
